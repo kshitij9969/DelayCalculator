@@ -20,12 +20,14 @@ from math import sqrt
 py.init_notebook_mode(connected=True)
 plt.style.use('fivethirtyeight')
 os.chdir(r"/Users/kshitijsingh/Downloads/DelayCalculator") # For macOS
-
+os.chdir(r"C:\Users\ks20092693\DelayCalculator")
 
 # Importing the dataset
 dataset = pd.read_excel('Corrected_dataset.xlsx')
 X = dataset.iloc[:, 0:2].values
 y = dataset.iloc[:, 2].values
+
+plt.scatter(y[0:400],X[0:400,1])
 
 # Splitting the dataset into the Training set and Test set
 from sklearn.model_selection import train_test_split
@@ -65,11 +67,13 @@ def build_regressor():
 
 
 from keras.wrappers.scikit_learn import KerasRegressor
-regressor = KerasRegressor(build_fn=build_regressor, batch_size=100,epochs=100)
+regressor = KerasRegressor(build_fn=build_regressor, batch_size=8,epochs=100)
 
 
 results=regressor.fit(X_train,y_train)
-y_pred= regressor.predict(X_test)
+y_pred= regressor.predict(X_test) 
+plt.scatter(y_train, X_train[:,1])
+plt.scatter(y_pred, y_test)
 
 # Fitting Polynomial Regression to the dataset
 from sklearn.preprocessing import PolynomialFeatures
