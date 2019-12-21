@@ -29,9 +29,7 @@ y = dataset.iloc[:, 2].values
 
 plt.scatter(y[0:400],X[0:400,1])
 
-# Splitting the dataset into the Training set and Test set
-from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 0)
+
 
 
 # Feature Scaling
@@ -55,26 +53,36 @@ y= y.reshape(-1,1)
 y=sc.fit_transform(y)
 
 
+# Splitting the dataset into the Training set and Test set
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 0)
+
 # Creating the model
 from keras import Sequential
 from keras.layers import Dense
 def build_regressor():
     regressor = Sequential()
-    regressor.add(Dense(units=2, input_dim=2))
-    regressor.add(Dense(units=1))
-    regressor.compile(optimizer='adam', loss='mean_squared_error',  metrics=['mae','accuracy'])
+    regressor.add(Dense(units=12, input_dim=2))
+    regressor.add(Dense(units=8, activation='relu'))
+    
+    regressor.add(Dense(units=4, activation='relu'))
+    
+    regressor.add(Dense(units=1, activation='sigmoid'))
+    regressor.compile(optimizer='adam', loss='mean_squared_error',  metrics=['mse','accuracy'])
     return regressor
 
 
 from keras.wrappers.scikit_learn import KerasRegressor
-regressor = KerasRegressor(build_fn=build_regressor, batch_size=8,epochs=100)
+regressor = KerasRegressor(build_fn=build_regressor, batch_size=64,epochs=50)
 
 
 results=regressor.fit(X_train,y_train)
 y_pred= regressor.predict(X_test) 
 plt.scatter(y_train, X_train[:,1])
+plt.plot(y_pred)
+plt.plot(y_test)
+plt.show()
 plt.scatter(y_pred, y_test)
-
 # Fitting Polynomial Regression to the dataset
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import explained_variance_score, max_error, mean_absolute_error, mean_squared_error, median_absolute_error, r2_score
