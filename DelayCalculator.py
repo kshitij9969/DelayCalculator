@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Dec 15 18:45:22 2019
-
 @author: kshitijsingh
 
 Dataset Description: 
