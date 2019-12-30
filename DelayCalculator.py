@@ -4,6 +4,13 @@
 Created on Sun Dec 15 18:45:22 2019
 
 @author: kshitijsingh
+
+Dataset Description: 
+A. Dataset contains three columns viz.
+    1. N        -      Number of TCLs(int)
+    2. Pnorm(%) -      Normalized % power of each TCL.(float)
+    3. Alpha    -      Delay(float)
+B.  Length - 49490
 """
 
 
@@ -11,126 +18,208 @@ Created on Sun Dec 15 18:45:22 2019
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib import rc
 import plotly.offline as py
-import plotly.graph_objs as go
-import plotly.tools as tls
 import os
 import seaborn as sns
 from math import sqrt
+from keras import Sequential
+from keras.layers import Dense
+
 py.init_notebook_mode(connected=True)
+plt.rc('text', 
+       usetex=True)
 plt.style.use('fivethirtyeight')
-os.chdir(r"/Users/kshitijsingh/Downloads/DelayCalculator") # For macOS
-os.chdir(r"C:\Users\ks20092693\DelayCalculator")
-
-# Importing the dataset
-dataset = pd.read_excel('Corrected_dataset.xlsx')
-X = dataset.iloc[:, 0:2].values
-y = dataset.iloc[:, 2].values
-
-plt.scatter(y[0:400],X[0:400,1])
+os.chdir(r"%%Path to the working directory") # For macOS
+os.chdir(r"%%Path to working directory") # For windows
 
 
+''' 
+Importing the dataset:
+    Here we import the dataset and split it into 
+    matrix of features(independent variabsles)
+    and dependent(target) variables
+    Variables:
+        1. NP - Holds columns N and P
+        2. a - Holds column alpha
+'''
+
+dataset = pd.read_excel('/Users/kshitijsingh/Downloads/temp1.xlsx')
+NP = dataset.iloc[:, 0:2].values
+a = dataset.iloc[:, 2].values
+
+''' Visualising the dataset '''
+# The whole dataset
+plt.scatter(a,
+            NP[:,0:1])
+plt.rc('text', 
+       usetex=True)
+plt.ylabel(r'$P_{norm}$(%)',
+           fontsize=24)
+plt.xlabel(r'$\alpha$', 
+           fontsize=24)
+plt.legend()
+plt.title(r'Variation of $P_{norm}$(%) vs $\alpha$ as N varies from 10 to 500')
+
+# Visualising P vs alpha
+plt.scatter(a[0:100],
+            NP[0:100,1], 
+            label='N = 10') # For N = 10
+plt.scatter(a[500:600],
+            NP[500:600,1], 
+            label='N = 15') # For N = 15
+plt.scatter(a[1000:1100],
+            NP[1000:1100,1], 
+            label='N = 20') # For N = 20
+plt.scatter(a[2000:2100],
+            NP[2000:2100,1], 
+            label='N = 30') # For N = 30
+plt.legend()
+plt.title(r'$P_{norm}$(%) vs $\alpha$')
+plt.ylabel(r'$P_{norm}$(%)',
+           fontsize=24)
+plt.xlabel(r'$\alpha$', 
+           fontsize=24)
 
 
-# Feature Scaling
-"""from sklearn.preprocessing import StandardScaler
-sc_X = StandardScaler()
-X_train = sc_X.fit_transform(X_train)
-X_test = sc_X.transform(X_test)
-sc_y = StandardScaler()
-y_train = sc_y.fit_transform(y_train)"""
-
-#### Neural Network ####
-
-
-sns.pairplot(dataset)
-
+''' Creating the neural network model '''
 # Scaling the features
 from sklearn.preprocessing import  MinMaxScaler
 sc= MinMaxScaler()
-X= sc.fit_transform(X)
-y= y.reshape(-1,1)
-y=sc.fit_transform(y)
-
+NP= sc.fit_transform(NP)
+a= a.reshape(-1,1)
+a=sc.fit_transform(a)
 
 # Splitting the dataset into the Training set and Test set
 from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 0)
+NP_train, NP_test, a_train, a_test = train_test_split(NP, 
+                                                      a, 
+                                                      test_size = 0.3, 
+                                                      random_state = 0)
 
 # Creating the model
-from keras import Sequential
-from keras.layers import Dense
 def build_regressor():
     regressor = Sequential()
-    regressor.add(Dense(units=12, input_dim=2))
-    regressor.add(Dense(units=8, activation='relu'))
-    
-    regressor.add(Dense(units=4, activation='relu'))
-    
-    regressor.add(Dense(units=1, activation='sigmoid'))
-    regressor.compile(optimizer='adam', loss='mean_squared_error',  metrics=['mse','accuracy'])
+    regressor.add(Dense(units=2, 
+                        input_dim=2))
+    regressor.add(Dense(units=4, 
+                        activation='relu'))    
+    regressor.add(Dense(units=1, 
+                        activation='sigmoid'))
+    regressor.compile(optimizer='adam', 
+                      loss='mean_squared_error',  
+                      metrics=['mse','accuracy'])
     return regressor
 
-
+# Building the model
 from keras.wrappers.scikit_learn import KerasRegressor
-regressor = KerasRegressor(build_fn=build_regressor, batch_size=64,epochs=50)
+regressor = KerasRegressor(build_fn=build_regressor,
+                           batch_size=64,
+                           epochs=50)
+
+# Training and prediction
+results=regressor.fit(NP_train,a_train)
+a_pred= regressor.predict(NP_test)
 
 
-results=regressor.fit(X_train,y_train)
-y_pred= regressor.predict(X_test) 
-plt.scatter(y_train, X_train[:,1])
-plt.plot(y_pred)
-plt.plot(y_test)
-plt.show()
-plt.scatter(y_pred, y_test)
-# Fitting Polynomial Regression to the dataset
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.metrics import explained_variance_score, max_error, mean_absolute_error, mean_squared_error, median_absolute_error, r2_score
-# from sklearn.metrics import mean_poisson_deviance, mean_gamma_deviance
-from sklearn.linear_model import LinearRegression
+''' Visualising the results '''
 
-poly_reg = PolynomialFeatures(degree = 1)
-X_poly = poly_reg.fit_transform(X_train)
-poly_reg.fit(X_poly, y_train)
-lin_reg_2 = LinearRegression()
-lin_reg_2.fit(X_poly, y_train)
-
-
-
-# Fitting the Regression Model to the dataset
-# Create your regressor here
-
-# Predicting a new result
-y_pred = lin_reg_2.predict(poly_reg.fit_transform(X_test))
-print(explained_variance_score(y_test, y_pred))
-max_error(y_test, y_pred)
-print(mean_absolute_error(y_test, y_pred))
-print(mean_squared_error(y_test, y_pred))
-
-print(sqrt(mean_squared_error))
-print(median_absolute_error(y_test, y_pred))
-print(r2_score(y_test, y_pred))
-mean_poisson_deviance(y_test, y_pred)
-mean_gamma_deviance(y_test,y_pred)
-
-
-
-
-
-# Visualising the Regression results
-plt.scatter(X, y, color = 'red')
-plt.plot(X, regressor.predict(X), color = 'blue')
-plt.title('Truth or Bluff (Regression Model)')
-plt.xlabel('Position level')
-plt.ylabel('Salary')
+# Line plot comparision
+plt.plot(a_pred[0:100], 
+         color = 'red', 
+         label=r'$\alpha_{pred}$')
+plt.plot(a_test[0:100], 
+         color ='dodgerblue', 
+         label=r'$\alpha_{true}$')
+plt.plot(a_pred[0:100], 
+         'g*')
+plt.ylabel(r'$\alpha$', 
+           fontsize=24)
+plt.xlabel(r'Time Series',
+           fontsize=24)
+plt.title(r'$\alpha_{pred}$ vs $\alpha_{test}$',
+          fontsize = 48)
+plt.legend()
 plt.show()
 
-# Visualising the Regression results (for higher resolution and smoother curve)
-X_grid = np.arange(min(X), max(X), 0.1)
-X_grid = X_grid.reshape((len(X_grid), 1))
-plt.scatter(X, y, color = 'red')
-plt.plot(X_grid, regressor.predict(X_grid), color = 'blue')
-plt.title('Truth or Bluff (Regression Model)')
-plt.xlabel('Position level')
-plt.ylabel('Salary')
-plt.show()
+# Scatter plot of predicted values vs true values
+plt.scatter(a_pred,
+            a_test)
+plt.xlabel(r'$\alpha_{pred}$(°)', 
+           fontsize = 18)
+plt.ylabel(r'$\alpha_{test}$(°)', 
+           fontsize = 18)
+plt.title(r'$\alpha_{pred}$ vs $\alpha_{test}$', 
+          fontsize = 48)
+
+# Plotting the error lines
+x = np.linspace(start=0,
+                stop = 0.8,
+                num = 100)
+plt.plot(x,
+         x,
+         color ='black', 
+         dashes=[5,5])
+plt.plot(x, 
+         x+(0.1), 
+         color ='red', 
+         dashes=[3,3])
+plt.plot(x, 
+         x-(0.1), 
+         color ='red', 
+         dashes=[3,3])
+
+# Plotting loss(MSE) vs epochs
+ep = np.linspace(start=1, 
+                 stop=50, 
+                 num = 50)
+plt.plot(ep,
+         results.history['loss'], 
+         color='dodgerblue', 
+         label='Loss')
+plt.xlabel(r'Epochs', 
+           fontsize = 18)
+plt.ylabel(r'Loss', 
+           fontsize = 18)
+plt.legend()
+
+# Plotting MSE and RMSE vs epochs
+ep = np.linspace(start=1,
+                 stop=50, 
+                 num = 50)
+plt.plot(ep,
+         results.history['mse'], 
+         color='dodgerblue', 
+         label='Mean Squared Error')
+plt.xlabel(r'Epochs', 
+           fontsize = 18)
+plt.ylabel(r'Mean Squared Error', 
+           fontsize = 18)
+ep = np.linspace(start=1, 
+                 stop=50, 
+                 num = 50)
+RMSE = np.sqrt(results.history['mse'])
+plt.plot(ep,
+         RMSE,
+         color='dodgerblue', 
+         label='Root Mean Squared Error')
+plt.legend()
+plt.xlabel(r'Epochs', 
+           fontsize = 18)
+plt.ylabel(r'Root Mean Squared Error', 
+           fontsize = 18)
+
+
+''' Metrics '''
+# Evaluating the performance of model
+from sklearn.metrics import explained_variance_score, max_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.metrics import median_absolute_error, r2_score
+
+print(explained_variance_score(a_test, a_pred))
+print(max_error(a_test, a_pred))
+print(mean_absolute_error(a_test, a_pred))
+print(mean_squared_error(a_test, a_pred))
+print(sqrt(mean_squared_error(a_test, a_pred)))
+print(median_absolute_error(a_test, a_pred))
+print(r2_score(a_test, a_pred))
